@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MusicalInstruments</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5.1/dat.gui.min.js"></script>
+    <script src="https://rdub80.github.io/aframe-gui/dist/aframe-gui.min.js"></script>
+    
+
+    
+
+</head>
+
+
+<div id="infoPanel" style="display: none;">
+  <div class="info-box">
+    <button class="close-btn" onclick="hideInfo()">✖</button>
+    <p id="infoText"></p>
+  </div>
+</div>
+
+
+<body>
+
+<style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
+
+    #hud-buttons {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 999;
+    }
+
+    .hud-button {
+      background-color: #333;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #infoPanel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+
+  .info-box {
+  background-color: black;
+  color: white;
+  padding: 40px; 
+  border-radius: 12px;
+  max-width: 800px; 
+  font-size: 20px; 
+  line-height: 1.6; 
+  position: relative;
+  text-align: center;
+}
+
+
+  .close-btn {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+  }
+
+  .close-btn:hover {
+    color: red;
+  }
+  </style>
+
+
+<div id="hud-buttons">
+        <button class="hud-button"
+            onmousedown="startRotating('left')"
+            onmouseup="stopRotating()"
+            onmouseleave="stopRotating()"
+             ontouchstart="startRotating('left')" 
+             ontouchend="stopRotating()">Left</button>
+        <button class="hud-button"
+            onmousedown="startRotating('right')"
+            onmouseup="stopRotating()"
+            onmouseleave="stopRotating()"
+             ontouchstart="startRotating('right')"
+              ontouchend="stopRotating()">Right</button>
+        <button class="hud-button" onclick="showInfo()">Info</button>
+        <button class="hud-button" onclick="playCurrentSound()">Play Sound</button>
+        <button class="hud-button" onclick="stopCurrentSound()">Stop Sound</button>
+        <button class="hud-button" onclick="nextInstrument()">Next Instrument</button>
+        <button class="hud-button" onclick="enable3DMode()">Go 3D Mode</button>
+
+</div>
+
+<div id="exit-walkmode-button" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+  <button class="hud-button" onclick="exitWalkMode()">Go Back to Mobile View</button>
+</div>
+
+
+
+
+
+
+    <a-scene>
+        <a-assets>
+            <a-asset-item id="dumlowpoly" src="resources/electronic_drum_set.glb"></a-asset-item>
+            <a-asset-item id="Room" src="resources/vr_gallery/scene.gltf"></a-asset-item>
+            <a-asset-item id="Flute" src="resources/wajia_flute/scene.gltf"></a-asset-item>
+            <a-asset-item id="Guitar" src="resources/guitar/scene.gltf"></a-asset-item>
+            <a-asset-item id="acoustic_guitar" src="resources/acoustic_guitar (1)/scene.gltf"></a-asset-item>
+            <a-asset-item id="Keyboard" src="resources/musical_keyboard/scene.gltf"></a-asset-item>
+            <a-asset-item id="Piano" src="resources/piano/scene.gltf"></a-asset-item>
+            <a-asset-item id="Violin" src="resources/violin1/scene.gltf"></a-asset-item>
+            <audio id="flutesound" src="resources/Sound/Flute.mp3"></audio>
+            <audio id="GuitarSound" src="resources/Sound/GUITAR SOUND EFFECT.mp3"></audio>
+            <audio id="AcousticGuitarSound" src="resources/Sound/Acoustic guitar sound effect free download.mp3"></audio>
+            <audio id="pianoSound" src="resources/Sound/pianoSound.mp3"></audio>
+            <audio id="ViolinSound" src="resources/Sound/Violin.mp3"></audio>
+            <audio id="DrumsetSound" src="resources/Sound/drums.mp3"></audio>
+            <audio id="KeyboardSound" src="resources/Sound/YAMAHA PSR-E373 Concert Grand Piano Sound (Line Out).mp3"></audio>
+            <img id="RightArrow" src="resources/Right.png">
+            <img id="LeftArrow" src="resources/Left.png">
+        </a-assets>
+
+        <a-entity id="mouseCursor" cursor="rayOrigin: mouse" raycaster="objects: [gui-interactable]"></a-entity>
+<a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: [gui-interactable]"></a-entity>
+<a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: [gui-interactable]"></a-entity>
+
+
+
+        <a-camera id="camera" wasd-controls-enabled="false" look-controls-enabled="false" position="0 1.6 0">
+            <a-cursor id="crosshair"color="black"></a-cursor>
+        </a-camera>
+
+        <a-plane color="white" height="1" scale="700 700" rotation="-90 0 0" position="0 -0.1 0"></a-plane>
+
+        <a-entity position="-2 2 -4">
+            <a-text value="Welcome to the VR Gallery For musical instruments" color="#000" width="6"></a-text>
+        </a-entity>
+
+        <a-entity position="-1 2 -13" >
+            <a-text id="BackText" value="oldest Instrument" color="#000" width="6" visible="false" ></a-text>
+        </a-entity>
+
+
+        <a-entity position="-4 1.5 -5" rotation=" 0 90 0">
+            <a-text id="SideWallText" visible="false" value="This is the neanderthal flute. It is the oldest instrument created which dated 60000 years ago and was discovered in the divje babe cave near cerkno in 1995. " color="#000" width="6"></a-text>
+        </a-entity>
+
+        <a-entity position="-2 3.5 -12">
+            <a-text visible="false" id="Click" value="Click instrument for sound" color="#000" width="6"></a-text>
+        </a-entity>
+
+        <a-entity id="rotate text" visible="false" rotation=" 0 0 0" position="-1.65 1 -11">
+            <a-text value="Rotate" color="#000" width="6"></a-text>
+        </a-entity>
+
+        <a-entity id="StopMusicText" visible="false" rotation=" 0 0 0" position="-2.25   2 -11">
+            <a-text value="Stop Sound" color="#000" width="6"></a-text>
+        </a-entity>
+
+        <a-box visible="false" id="StopMusic" position="-1.25 1.5 -11.25" color="red" depth="0.5" height="0.5" width="0.5" class="ui"onclick="stopCurrentSound()"></a-box>
+
+        <a-entity id="NextinstrumentText" visible="false" rotation=" 0 0 0" position="1 1 -11">
+            <a-text value="Next Instrument" color="#000" width="6"></a-text>
+        </a-entity>
+
+        <a-box visible="false" id="nextInstrument" position="2 0.5 -11" color="orange" depth="0.5" height="0.5" width="0.5" class="ui"onclick="nextInstrument()"></a-box>
+
+        <a-box id="redirectBox"
+              position="0 0.5 -9.4"
+              depth="0.3" height="0.5" width="0.5"
+              color="#007BFF"
+              class="ui"
+              onclick="redirectToInstrumentPage()"
+              visible="false">
+        </a-box>
+
+        <a-entity position="0 0.5 -9.2">
+          <a-text id="arTEXT" value="Open AR Page" align="center" color="black" width="4"  visible="false"></a-text>
+        </a-entity>
+        
+        
+
+        <a-plane id="LineSlider" color="black" width="2" height="0.05" position="2 1.5 -11" visible="false"></a-plane>
+    <a-circle id="sliderMarker" radius="0.05" color="blue" position="2 1.5 -11" visible="false"></a-circle>
+
+
+    <a-entity id="minusButton"
+              geometry="primitive: plane; height: 0.3; width: 0.3"
+              material="color: white"
+              position="0.8 1.5 -11"
+              text="value: -; color: red; align: center; width: 4"
+              class="clickable"
+              visible="false">
+    </a-entity>
+
+
+    <a-entity id="plusButton"
+              geometry="primitive: plane; height: 0.3; width: 0.3"
+              material="color: white"
+              position="3.2 1.5 -11"
+              text="value: +; color: green; align: center; width: 4"
+              class="clickable"
+              visible="false">
+    </a-entity>
+
+
+    <a-text id="resizableText"
+        value="Adjustable Text"
+        color="black"
+        width="4"
+        position="4 2 -9"
+        rotation="0 -90 0">
+</a-text>
+
+<a-entity id="textPlus"
+          geometry="primitive: plane; height: 0.3; width: 0.3"
+          material="color: white"
+          position="4 1.5 -9"
+          rotation="0 -90 0"
+          text="value: +; color: green; align: center; width: 4"
+          class="clickable">
+</a-entity>
+
+
+<a-entity id="textMinus"
+          geometry="primitive: plane; height: 0.3; width: 0.3"
+          material="color: white"
+          position="4 1.1 -9"
+          rotation="0 -90 0"
+          text="value: -; color: red; align: center; width: 4"
+          class="clickable">
+</a-entity>
+
+
+
+
+       <a-plane visible="false" id="RightRotate" src="#RightArrow" scale="0.5 0.5 0.5" position="-1 0.5 -11" class="ui"
+         onmousedown="startRotating('right')" onmouseup="stopRotating()" onmouseleave="stopRotating()"></a-plane>
+
+<a-plane visible="false" id="LeftRotate" src="#LeftArrow" scale="0.5 0.5 0.5" position="-1.5 0.5 -11" class="ui"
+        onmousedown="startRotating('left')" onmouseup="stopRotating()" onmouseleave="stopRotating()"></a-plane>
+
+    
+
+
+ 
+                <a-entity id="flute-wrapper" position="0 1 -10">
+        <a-entity id="flute" gltf-model="#Flute" scale="0.05 0.05 0.05" sound="src: #flutesound; on:click"></a-entity>
+        </a-entity>
+
+        <a-entity id="guitar-wrapper" position="0 -800 -10">
+        <a-entity id="guitar" gltf-model="#Guitar" scale="0.2 0.2 0.2" rotation="90 -90 0" sound="src: #GuitarSound;"class="instrument"></a-entity>
+        </a-entity>
+
+        <a-entity id="keyboard-wrapper" position="0 -800 -10">
+        <a-entity id="keyboard" gltf-model="#Keyboard" scale="0.3 0.3 0.3" sound="src: #KeyboardSound; on:click" class="instrument"></a-entity>
+        </a-entity>
+
+        <a-entity id="drumset-wrapper" position="0 -800 -10">
+        <a-entity id="drumset" gltf-model="#dumlowpoly" scale="0.6 0.6 0.6" rotation="0 180 0" sound="src: #DrumsetSound; on:click" class="instrument"></a-entity>
+        </a-entity>
+
+        <a-entity id="piano-wrapper" position="0 -800 -10">
+        <a-entity id="piano" gltf-model="#Piano" scale="0.02 0.02 0.02" sound="src: #pianoSound; on:click" class="instrument"></a-entity>
+        </a-entity>
+
+        <a-entity id="violin-wrapper" position="0 -800 -10">
+        <a-entity id="violin" gltf-model="#Violin" scale="0.04 0.04 0.04" sound="src: #ViolinSound; on:click" class="instrument"></a-entity>
+        </a-entity>
+
+        <a-entity id="acousticguitar-wrapper" position="0 -800 -10">
+        <a-entity id="acousticguitar" gltf-model="#acoustic_guitar" scale="0.2 0.2 0.2" sound="src: #AcousticGuitarSound; on:click" class="instrument"></a-entity>
+        </a-entity>
+
+        <a-entity position="0 0 -10" gltf-model="#Room"></a-entity>
+    </a-scene>
+<script>
+  const instruments = [
+    "flute-wrapper",
+    "guitar-wrapper",
+    "keyboard-wrapper",
+    "drumset-wrapper",
+    "piano-wrapper",
+    "acousticguitar-wrapper",
+    "violin-wrapper"
+  ];
+
+  const instrumentYPositions = {
+    "flute-wrapper": 1,
+    "guitar-wrapper": 2,
+    "keyboard-wrapper": 1,
+    "drumset-wrapper": 1,
+    "piano-wrapper": 1,
+    "acousticguitar-wrapper": 1.5,
+    "violin-wrapper": 1
+  };
+
+  const instrumentInfo = {
+    "flute-wrapper": "This is the neanderthal flute. It is the oldest instrument created which dated 60000 years ago and was discovered in the Divje Babe cave near Cerkno in 1995.",
+    "guitar-wrapper": "Hybrid Acoustic-Electric Instruments like guitars were first developed in 1930 by George Beauchamp and Adolph Rickenbacker.",
+    "keyboard-wrapper": "Digital pianos replicate acoustic piano sounds with added technology. First developed in 1979 and patented in 1981 by Wilton Decker.",
+    "drumset-wrapper": "Electronic Drum Kits use sensors to generate sound and were first developed in the early 1970s by Graeme Edge of the Moody Blues.",
+    "piano-wrapper": "The piano is the most popular instrument. Invented by Bartolomeo Cristofori in 1655 in Italy.",
+    "acousticguitar-wrapper": "The guitar is the second most popular instrument. Invented by a German immigrant in America in the 15th century.",
+    "violin-wrapper": "The violin is the third most popular instrument. It was invented by Andrea Amati around 1565."
+  };
+  const instrumentWallText = {
+  "flute-wrapper": "oldest Instrument",
+  "guitar-wrapper": "Latest instruments",
+  "keyboard-wrapper": "Latest instruments",
+  "drumset-wrapper": "Latest instruments",
+  "piano-wrapper": "Most popular instruments",
+  "acousticguitar-wrapper": "Most popular instruments",
+  "violin-wrapper": "Most popular instruments"
+};
+
+const uiElementsToToggle = [
+  document.getElementById('BackText'),
+  document.getElementById('SideWallText'),
+  document.getElementById('Click'),
+  document.getElementById('rotate text'),
+  document.getElementById('NextinstrumentText'),
+  document.getElementById('nextInstrument'),
+  document.getElementById('LeftRotate'),
+  document.getElementById('RightRotate'),
+  document.getElementById('redirectBox'),
+  document.getElementById('arTEXT'),
+  document.getElementById('StopMusic'),
+  document.getElementById('StopMusicText'),
+  document.getElementById('LineSlider'),
+  document.getElementById('sliderMarker'),
+  document.getElementById('minusButton'),
+  document.getElementById('plusButton'),
+];
+
+
+
+  const instrumentDefaultStates = {};
+
+  window.addEventListener("load", () => {
+    const canvases = document.getElementsByTagName("canvas");
+    for (let canvas of canvases) {
+      canvas.style.position = "absolute";
+      canvas.style.zIndex = "0";
+    }
+    instruments.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        instrumentDefaultStates[id] = {
+          position: { ...el.getAttribute("position") },
+          rotation: { ...el.getAttribute("rotation") }
+        };
+      }
+    });
+  });
+
+
+  let in3DMode = false;
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll('.instrument').forEach(entity => {
+    entity.addEventListener('click', () => {
+      if (in3DMode) {
+        const sound = entity.components.sound;
+        if (sound) {
+          sound.playSound();
+        }
+      }
+    });
+  });
+});
+
+  let currentInstrumentIndex = 0;
+  let rotateInterval = null;
+  let currentRotation = 0;
+
+  function startRotating(direction) {
+  if (rotateInterval) return;
+
+  const currentId = instruments[currentInstrumentIndex];
+  const entity = document.getElementById(currentId);
+  if (!entity) return;
+
+  const step = direction === 'left' ? -2 : 2;
+  rotateInterval = setInterval(() => {
+    currentRotation += step;
+    entity.setAttribute('rotation', `0 ${currentRotation} 0`);
+  }, 30);
+}
+
+  function stopRotating() {
+    clearInterval(rotateInterval);
+    rotateInterval = null;
+  }
+
+  function showInfo() {
+    const currentId = instruments[currentInstrumentIndex];
+    document.getElementById('infoText').innerText = instrumentInfo[currentId] || "No information available.";
+    document.getElementById('infoPanel').style.display = 'flex';
+  }
+
+  function hideInfo() {
+    document.getElementById('infoPanel').style.display = 'none';
+  }
+
+  function nextInstrument() {
+  const currentId = instruments[currentInstrumentIndex];
+  const currentEl = document.getElementById(currentId);
+  
+
+  const currentInstrument = currentEl.querySelector('[sound]');
+  if (currentInstrument && currentInstrument.components.sound) {
+    currentInstrument.components.sound.stopSound();
+  }
+
+  currentEl.setAttribute("animation", {
+    property: "position",
+    to: "0 -800 -10",
+    dur: 800,
+    easing: "easeInOutQuad"
+  });
+
+  currentInstrumentIndex = (currentInstrumentIndex + 1) % instruments.length;
+  const nextId = instruments[currentInstrumentIndex];
+  const nextEl = document.getElementById(nextId);
+  const targetY = instrumentYPositions[nextId] || 1;
+
+  nextEl.setAttribute("position", `0 -5 -10`);
+  nextEl.setAttribute("animation", {
+    property: "position",
+    to: `0 ${targetY} -10`,
+    dur: 800,
+    easing: "easeInOutQuad"
+  });
+
+  currentRotation = 0;
+
+  const wallTextValue = instrumentWallText[nextId] || "";
+  document.getElementById('BackText').setAttribute('value', wallTextValue);
+
+  const infoValue = instrumentInfo[nextId] || "";
+  document.getElementById('SideWallText').setAttribute('value', infoValue);
+}
+
+
+ function enable3DMode() {
+  in3DMode = true;
+  const camera = document.getElementById('camera');
+  camera.setAttribute('wasd-controls-enabled', true);
+  camera.setAttribute('look-controls-enabled', true);
+   const crosshair = document.getElementById('crosshair');
+   crosshair.setAttribute('visible', 'true');
+
+  document.getElementById('hud-buttons').style.display = 'none';
+  document.getElementById('exit-walkmode-button').style.display = 'block';
+
+  uiElementsToToggle.forEach(el => el.setAttribute('visible', 'true'));
+}
+
+function exitWalkMode() {
+  in3DMode = false;
+  const camera = document.getElementById('camera');
+  camera.setAttribute('wasd-controls', 'enabled: false');
+  camera.setAttribute('look-controls', 'enabled: false');
+  camera.setAttribute('position', '0 1.5 0');
+  camera.setAttribute('rotation', '0 0 0');
+  if (camera.components['wasd-controls']) {
+    camera.components['wasd-controls'].velocity.set(0, 0, 0);
+  }
+
+  const crosshair = document.getElementById('crosshair');
+  crosshair.setAttribute('visible', 'false');
+
+  document.getElementById('hud-buttons').style.display = 'flex';
+  document.getElementById('exit-walkmode-button').style.display = 'none';
+
+  uiElementsToToggle.forEach(el => el.setAttribute('visible', 'false'));
+}
+
+
+function playCurrentSound() {
+  const currentWrapperId = instruments[currentInstrumentIndex];
+  const wrapper = document.getElementById(currentWrapperId);
+  if (wrapper) {
+    const instrument = wrapper.querySelector('[sound]');
+    if (instrument && instrument.components.sound) {
+      instrument.components.sound.playSound();
+    }
+  }
+}
+
+function stopCurrentSound() {
+  const currentWrapperId = instruments[currentInstrumentIndex];
+  const wrapper = document.getElementById(currentWrapperId);
+
+  const instrument = wrapper.querySelector('[sound]');
+  if (instrument && instrument.components.sound) {
+    instrument.components.sound.stopSound();
+  }
+}
+
+function redirectToInstrumentPage() {
+  const currentId = instruments[currentInstrumentIndex];
+  const instrumentToPage = {
+    "flute-wrapper": "ArFlute.html",
+    "guitar-wrapper": "ArGuitar.html",
+    "keyboard-wrapper": "ArKeyboard.html",
+    "drumset-wrapper": "ArDrum.html",
+    "piano-wrapper": "ArPiano.html",
+    "acousticguitar-wrapper": "ArAcousticGuitar.html",
+    "violin-wrapper": "ArViolin.html"
+  };
+
+  const targetPage = instrumentToPage[currentId];
+  if (targetPage) {
+    window.location.href = targetPage;
+  } else {
+    alert("No page defined for this instrument.");
+  }
+}
+
+let value = 2;
+    const step = 0.2;
+    const min = 1;
+    const max = 3.2;
+    const marker = document.querySelector('#sliderMarker');
+
+    document.querySelector('#plusButton').addEventListener('click', () => {
+      if (value + step <= max) {
+        value += step;
+        marker.setAttribute('position', `${value} 1.5 -11`);
+        updateVolume();
+
+      }
+    });
+
+    document.querySelector('#minusButton').addEventListener('click', () => {
+      if (value - step >= min) {
+        value -= step;
+        marker.setAttribute('position', `${value} 1.5 -11`);
+        updateVolume();
+
+      }
+    });
+
+
+    function updateVolume() {
+  const percent = (value - min) / (max - min);
+
+  const currentWrapperId = instruments[currentInstrumentIndex];
+  const wrapper = document.getElementById(currentWrapperId);
+  const instrument = wrapper?.querySelector('[sound]');
+  
+  if (instrument) {
+    instrument.setAttribute('sound', 'volume', percent);
+  }
+}
+
+let textSize = 4; 
+const minSize = 1;
+const maxSize = 10;
+const SideWallText = document.getElementById('SideWallText');
+
+document.getElementById('textPlus').addEventListener('click', () => {
+  if (textSize < maxSize) {
+    textSize += 1;
+    SideWallText.setAttribute('width', textSize);
+  }
+});
+
+document.getElementById('textMinus').addEventListener('click', () => {
+  if (textSize > minSize) {
+    textSize -= 1;
+    SideWallText.setAttribute('width', textSize);
+  }
+});
+
+
+</script>
+
+
+
+
+</body>
+</html>

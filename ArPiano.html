@@ -1,0 +1,36 @@
+<html>
+<head>
+<script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
+<script src="https://jeromeetienne.github.io/AR.js/aframe/build/aframe-ar.js"></script>
+<body style='margin : 0px; overflow: hidden;'>
+ 
+</head>
+<div style="position: fixed; top: 20px; left: 20px; z-index: 999;">
+  <button id="gobackbutton" onclick="goback()">Go Back</button>
+</div>
+
+
+  <script>
+  function goback() {
+    window.location.href = "index.html"; 
+  }
+</script>
+
+<a-scene embedded arjs renderer="colorManagement: true">
+  <a-assets>
+    <a-assets>
+      <a-asset-item id="Piano" src="resources/piano/scene.gltf"></a-asset-item>
+    </a-assets>
+  </a-assets>
+
+    <a-entity gltf-model="#Piano" animation-mixer scale="0.02 0.02 0.02"
+                  position="0 0.5 0" rotation="-90 0 0"></a-entity>
+
+        <a-text value="Most popular Instruments" color="#000000" width="4" align="center"
+                position="0 0 0.8" rotation="-90 0 0" visible="true"></a-text>
+  
+  <a-marker-camera preset='hiro'></a-marker-camera>
+</a-scene>
+
+
+</html>
