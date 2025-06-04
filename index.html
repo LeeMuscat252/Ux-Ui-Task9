@@ -6,11 +6,6 @@
     <title>MusicalInstruments</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5.1/dat.gui.min.js"></script>
-    <script src="https://rdub80.github.io/aframe-gui/dist/aframe-gui.min.js"></script>
-    
-
-    
-
 </head>
 
 
@@ -153,15 +148,11 @@
             <img id="LeftArrow" src="resources/Left.png">
         </a-assets>
 
-        <a-entity id="mouseCursor" cursor="rayOrigin: mouse" raycaster="objects: [gui-interactable]"></a-entity>
-<a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: [gui-interactable]"></a-entity>
-<a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: [gui-interactable]"></a-entity>
-
-
-
-        <a-camera id="camera" wasd-controls-enabled="false" look-controls-enabled="false" position="0 1.6 0">
-            <a-cursor id="crosshair"color="black"></a-cursor>
-        </a-camera>
+        <a-entity id="cameraRig" position="0 0 0" animation="property: position; to: 0 0 -6; dur: 4000; easing: easeInOutQuad">
+            <a-camera id="camera" wasd-controls-enabled="false" look-controls-enabled="false">
+                <a-cursor id="crosshair" visible="false"></a-cursor>
+            </a-camera>
+        </a-entity>
 
         <a-plane color="white" height="1" scale="700 700" rotation="-90 0 0" position="0 -0.1 0"></a-plane>
 
@@ -242,7 +233,8 @@
         color="black"
         width="4"
         position="4 2 -9"
-        rotation="0 -90 0">
+        rotation="0 -90 0"
+        visible="false">
 </a-text>
 
 <a-entity id="textPlus"
@@ -251,7 +243,8 @@
           position="4 1.5 -9"
           rotation="0 -90 0"
           text="value: +; color: green; align: center; width: 4"
-          class="clickable">
+          class="clickable"
+          visible="false">
 </a-entity>
 
 
@@ -261,7 +254,8 @@
           position="4 1.1 -9"
           rotation="0 -90 0"
           text="value: -; color: red; align: center; width: 4"
-          class="clickable">
+          class="clickable"
+          visible="false">
 </a-entity>
 
 
@@ -270,7 +264,7 @@
        <a-plane visible="false" id="RightRotate" src="#RightArrow" scale="0.5 0.5 0.5" position="-1 0.5 -11" class="ui"
          onmousedown="startRotating('right')" onmouseup="stopRotating()" onmouseleave="stopRotating()"></a-plane>
 
-<a-plane visible="false" id="LeftRotate" src="#LeftArrow" scale="0.5 0.5 0.5" position="-1.5 0.5 -11" class="ui"
+        <a-plane visible="false" id="LeftRotate" src="#LeftArrow" scale="0.5 0.5 0.5" position="-1.5 0.5 -11" class="ui"
         onmousedown="startRotating('left')" onmouseup="stopRotating()" onmouseleave="stopRotating()"></a-plane>
 
     
@@ -364,6 +358,11 @@ const uiElementsToToggle = [
   document.getElementById('sliderMarker'),
   document.getElementById('minusButton'),
   document.getElementById('plusButton'),
+  document.getElementById('resizableText'),
+  document.getElementById('textPlus'),
+  document.getElementById('textMinus'),
+  document.getElementById('LeftArrow'),
+  document.getElementById('RightArrow')
 ];
 
 
@@ -388,7 +387,7 @@ const uiElementsToToggle = [
   });
 
 
-  let in3DMode = false;
+  
 
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll('.instrument').forEach(entity => {
@@ -403,6 +402,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+
+  let in3DMode = false;
   let currentInstrumentIndex = 0;
   let rotateInterval = null;
   let currentRotation = 0;
